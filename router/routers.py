@@ -174,7 +174,7 @@ def set_targets(data: List[TargetEntry]):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     for entry in data:
-        product_type_column = "Product_Type" if entry.Business_Name == "BEE7W5ND34XQZRM" else "Category"
+        product_type_column = "Product_Type" if entry.Business_Name.lower() == "bee7w5nd34xqzrm" else "Category"
         new_entry = {
             "Business_Name": entry.Business_Name.strip().lower(),
             product_type_column: entry.Product_Type.strip().lower(),

@@ -715,9 +715,10 @@
     },
     {
         "Business_Name": "bee7w5nd34xqzrm",
-        "Category": "jabla",
+        "Product_Type": "jabla",
         "Start_Date": "2025-04-01",
         "Target_Value": 10000.0,
         "Uploaded_At": "2025-05-07 12:28:52"
     }
+    
 ]
