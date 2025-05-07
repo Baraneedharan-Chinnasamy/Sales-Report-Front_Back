@@ -24,7 +24,10 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
         df["Start_Date"] = pd.to_datetime(df["Start_Date"])
         df["Uploaded_At"] = pd.to_datetime(df["Uploaded_At"])
         df["Business_Name"] = df["Business_Name"].str.strip().str.lower()
-        df[product_type_column] = df[product_type_column].str.strip().str.lower()
+        # Make sure both product type columns exist in the DataFrame
+        for col in ["Category", "Product_Type"]:
+            if col in df.columns:
+                df[col] = df[col].fillna("").str.strip().str.lower()
         return df
 
     targets_df = load_targets()
@@ -83,6 +86,10 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
 
     summary = []
 
+    # Pre-process targets to handle date ranges
+    # Sort targets by Start_Date and Uploaded_At (for same date conflicts)
+    targets_df = targets_df.sort_values(by=["Start_Date", "Uploaded_At"], ascending=[True, False])
+
     for dt in periods:
         if aggregation == "daily":
             period_start = period_end = dt
@@ -99,11 +106,24 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
         t1_merged["Available"] = (t1_merged["Current_Stock"] > 0) | (t1_merged["Last_Sold_Date"] >= dt)
         available = t1_merged[t1_merged["Available"]].copy()
 
-        applicable_targets = (
-            targets_df[targets_df["Start_Date"] <= dt]
-            .sort_values(by=[product_type_column, "Start_Date", "Uploaded_At"], ascending=[True, False, False])
-            .drop_duplicates(subset=product_type_column, keep="first")
-        )
+        # Find applicable targets for the current date
+        # Get targets effective on the current date (target start date <= current date)
+        applicable_targets = targets_df[targets_df["Start_Date"] <= dt].copy()
+        
+        # For each product type, find the most recent target before the current date
+        def get_latest_target(group):
+            # Sort by Start_Date (descending) and Uploaded_At (descending)
+            sorted_group = group.sort_values(by=["Start_Date", "Uploaded_At"], ascending=[False, False])
+            # Return the first row (most recent target)
+            return sorted_group.iloc[0:1]
+        
+        # Group by product type and get the latest target for each
+        if not applicable_targets.empty:
+            # Use the appropriate product_type_column for grouping
+            group_col = product_type_column if product_type_column in applicable_targets.columns else "Category"
+            applicable_targets = applicable_targets.groupby(group_col, as_index=False).apply(get_latest_target)
+            # Reset index to flatten the DataFrame
+            applicable_targets = applicable_targets.reset_index(drop=True)
 
         stock = t1["Current_Stock"].sum()
         stock_val = (t1["Current_Stock"] * t1["Sale_Price"]).sum()
@@ -135,7 +155,6 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
         deviation = ((t2.Total_Value.sum() - total_target_value) / total_target_value * 100) if total_target_value else 0
         stock_col_group = t1.groupby(col)["Current_Stock"].sum().to_dict()
 
-        
         summary.append({
             "Date": date_label,
             f"Total_Number_Of_{product_type_column}_Available": int(available[product_type_column].nunique()),
