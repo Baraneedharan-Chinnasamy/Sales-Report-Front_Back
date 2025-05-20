@@ -25,11 +25,11 @@ DATABASES = {
 engines = {
     name: create_engine(
         url,
-        pool_size=20,             # Number of connections to keep in the pool
-        max_overflow=5,           # Number of connections to allow beyond pool_size
-        pool_timeout=30,          # Timeout to get a connection from the pool (in seconds)
-        pool_recycle=3600,        # Recycle connections after this many seconds (to avoid stale connections)
-        echo=False                # Set to True if you want to log SQL queries for debugging
+        pool_size=20,             
+        max_overflow=5,           
+        pool_timeout=30,          
+        pool_recycle=3600,        
+        echo=False                
     )
     for name, url in DATABASES.items()
 }

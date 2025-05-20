@@ -9,12 +9,6 @@ MODEL_FILES = {
     "ADBXOUERJVK038L": "models.adb_db"
 }
 
-def get_dynamic_db(business: str):
-    if business is None:
-        raise ValueError("Business Name  is required")
-    return next(get_db(business))
-
-
 def get_models(business: str):
     """Dynamically import the correct models file."""
     if business not in MODEL_FILES:
