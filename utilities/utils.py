@@ -9,6 +9,7 @@ from functools import lru_cache
 from utilities.functions import load_targets, calculate_historical_stock, get_unique_periods, filter_active_targets
 
 def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_name: str = None, aggregation="daily", item_filter: dict = None, compare_with=None):
+
     #Start and end Date Mapping   
     Start_Date = pd.to_datetime(Start_Date)
     End_Date = pd.to_datetime(End_Date) if End_Date else Start_Date
@@ -49,7 +50,7 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
             previous_periods.append(previous_start)
     
     # Determine if we're using Age or Size based on business
-    age_or_size_col_name = "Age" if business_name == "BEE7W5ND34XQZRM" else "Size"
+    age_or_size_col_name = "Age" if business_name == "BEE7W5ND34XQZRM" or business_name == "ADBXOUERJVK038L" else "Size"
     
     # Load item data with required columns
     item_cols = [models.Item.Item_Id, models.Item.Item_Name, models.Item.Item_Type,models.Item.Item_Code, models.Item.Sale_Price, models.Item.Current_Stock,getattr(models.Item, product_type_column)]
@@ -210,7 +211,8 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
             historical_items_df["Available"] = (historical_items_df["Historical_Stock"] > 0) | (historical_items_df["Last_Sold_Date"] > dt)
         
         # Filter targets that are applicable for this date period
-        applicable_targets = filter_active_targets(targets_df, period_start, period_end)
+        applicable_targets = filter_active_targets(targets_df, period_start, period_end, effective_aggregation)
+
         
         # Create the period result dictionary (will include overall metrics and target-wise metrics)
         period_result = {

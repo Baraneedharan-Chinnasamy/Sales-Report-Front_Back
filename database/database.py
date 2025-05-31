@@ -13,14 +13,14 @@ DB_USER = urllib.parse.quote_plus(os.getenv("DB_USER"))
 DB_PASSWORD = urllib.parse.quote_plus(os.getenv("DB_PASSWORD"))
 DB_HOST = os.getenv("DB_HOST")
 
-# Dictionary of database connections
-DATABASES = {
-    "ZNG45F8J27LKMNQ": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/zing",
-    "PRT9X2C6YBMLV0F": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/prathiksham",
-    "BEE7W5ND34XQZRM": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/beelittle",
-    "ADBXOUERJVK038L": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/adoreaboo",
-}
+DB_PORT = os.getenv("DB_PORT", "3306") 
 
+DATABASES = {
+    "ZNG45F8J27LKMNQ": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/zing",
+    "PRT9X2C6YBMLV0F": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/prathiksham",
+    "BEE7W5ND34XQZRM": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/beelittle",
+    "ADBXOUERJVK038L": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/adoreaboo",
+}
 # Maintain separate session makers for each DB
 engines = {
     name: create_engine(

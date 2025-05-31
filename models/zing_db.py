@@ -43,6 +43,7 @@ class Item(Base):
     quadrant = Column(String(255), nullable=True, name="__Quadrant")
     restock_date = Column(Date, nullable=True, name="__Restock_Date")
     style_type = Column(String(255), nullable=True, name="__Style_Type")
+    feeding_friendly = Column(String(255), nullable=True, name="Feeding_Friendly")
 
     Updated_At = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
 
