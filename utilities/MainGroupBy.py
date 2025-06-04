@@ -206,6 +206,10 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
         elif pd.api.types.is_datetime64_any_dtype(t1[col]):
             # Keep datetime NaT as is, will be handled later
             pass
+    # Validate requested fields
+    missing_fields = [field for field in all_requested_fields if field not in t1.columns]
+    if missing_fields:
+        raise ValueError(f"The following fields are not available in the data: {missing_fields}")
 
     # Group and aggregate
     df = t1[list(all_requested_fields)]

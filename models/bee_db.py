@@ -53,6 +53,7 @@ class Item(Base):
     restock_status = Column(String(255), nullable=True, name="__Restock_Status")
     season = Column(String(255), nullable=True, name="__Season")
     season_style = Column(String(255), nullable=True, name="__Season_Style")
+    seasons_style = Column(String(255), nullable=True, name="__Seasons_Style")
     supplier_name = Column(String(255), nullable=True, name="__Supplier_Name")
     Updated_At = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
 

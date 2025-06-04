@@ -364,9 +364,19 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
                         "%_Deviation": round(((total_sale_value - adjusted_target_value) / adjusted_target_value * 100) if adjusted_target_value else 0, 2),
                     }
 
-                    # Group data by Size/Age for detailed breakdowns
-                    size_quantities = group_df.groupby(col)["Quantity"].sum().to_dict()
-                    stock_by_size = group_df.groupby(col)["Historical_Stock"].sum().to_dict()
+                    # Group data by Size/Age for detailed breakdowns with Item_Name_Count
+                    size_quantities = {}
+                    stock_by_size = {}
+                    
+                    for size_key, size_group in group_df.groupby(col):
+                        size_quantities[str(size_key)] = {
+                            "Quantity": float(size_group["Quantity"].sum()),
+                            "Item_Name_Count": int(size_group["Item_Name"].nunique())
+                        }
+                        stock_by_size[str(size_key)] = {
+                            "Quantity": int(size_group["Historical_Stock"].sum()),
+                            "Item_Name_Count": int(size_group["Item_Name"].nunique())
+                        }
                     
                     summary.update({
                         "Total_Quantity_Sold": total_quantity_sold,
@@ -377,8 +387,8 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
                         "Conversion_Rate": float(round((group_df["Items_Addedtocart"].sum() / group_df["Items_Viewed"].sum()) * 100, 2)) if group_df["Items_Viewed"].sum() > 0 else 0,
                         "Total_Items_Viewed": group_df["Items_Viewed"].sum(),
                         "Total_Items_Added_To_Cart": group_df["Items_Addedtocart"].sum(),
-                        f"{col}_Sold_Quantities": {str(k): float(v) for k, v in size_quantities.items()},
-                        f"Current_Stock_By_{col}": {str(k): int(v) for k, v in stock_by_size.items()}
+                        f"Sales_By_{col}": size_quantities,
+                        f"Stock_By_{col}": stock_by_size
                     })
                     
                     # Add target information
@@ -432,9 +442,19 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
                 total_quantity_sold = group_data["Quantity"].sum()
                 sell_through_rate = (total_quantity_sold / total_historical_stock) * 100 if total_historical_stock > 0 else 0
                 
-                # Group data by Size/Age for detailed breakdowns
-                size_quantities = group_data.groupby(col)["Quantity"].sum().to_dict()
-                stock_by_size = group_data.groupby(col)["Historical_Stock"].sum().to_dict()
+                # Group data by Size/Age for detailed breakdowns with Item_Name_Count
+                size_quantities = {}
+                stock_by_size = {}
+                
+                for size_key, size_group in group_data.groupby(col):
+                    size_quantities[str(size_key)] = {
+                        "Quantity": float(size_group["Quantity"].sum()),
+                        "Item_Name_Count": int(size_group["Item_Name"].nunique())
+                    }
+                    stock_by_size[str(size_key)] = {
+                        "Quantity": int(size_group["Historical_Stock"].sum()),
+                        "Item_Name_Count": int(size_group["Item_Name"].nunique())
+                    }
                 
                 summary.update({
                     "Total_Quantity_Sold": total_quantity_sold,
@@ -445,8 +465,8 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
                     "Conversion_Rate": float(round((group_data["Items_Addedtocart"].sum() / group_data["Items_Viewed"].sum()) * 100, 2)) if group_data["Items_Viewed"].sum() > 0 else 0,
                     "Total_Items_Viewed": group_data["Items_Viewed"].sum(),
                     "Total_Items_Added_To_Cart": group_data["Items_Addedtocart"].sum(),
-                    f"{col}_Sold_Quantities": {str(k): float(v) for k, v in size_quantities.items()},
-                    f"Current_Stock_By_{col}": {str(k): int(v) for k, v in stock_by_size.items()}
+                    f"Sales_By_{col}": size_quantities,
+                    f"Stock_By_{col}": stock_by_size
                 })
                 
                 summary_list.append(summary)
@@ -469,8 +489,8 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
 
         import re
         remaining_cols = [col for col in result_df.columns if col not in preferred_order]
-        size_related = sorted([col for col in remaining_cols if re.search(r"(Size|Age)_Sold_Quantities", col)])
-        stock_related = sorted([col for col in remaining_cols if col.startswith("Current_Stock_By_")])
+        size_related = sorted([col for col in remaining_cols if re.search(r"Sales_By_(Size|Age)", col)])
+        stock_related = sorted([col for col in remaining_cols if col.startswith("Stock_By_")])
 
         final_column_order = preferred_order + size_related + stock_related + [
             col for col in remaining_cols if col not in size_related + stock_related
