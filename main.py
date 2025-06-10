@@ -7,6 +7,7 @@ from router.targets import router as targets_router
 from router.export import router as export_router
 from router.columns import router as columns_router
 from router.groupby import router as groupby_router
+from Authentication.auth import router as Authentication
 
 
 from utilities.generic_utils import get_models
@@ -17,7 +18,7 @@ app = FastAPI(title="Inventory Summary")
 # === CORS Middleware ===
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=["http://localhost:3000"],  # In production, specify allowed origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,6 +32,7 @@ app.include_router(targets_router, prefix="/api")
 app.include_router(export_router, prefix="/api")
 app.include_router(columns_router, prefix="/api")
 app.include_router(groupby_router, prefix="/api")
+app.include_router(Authentication, prefix="/api")
 
 
 # === Auto-create tables ===

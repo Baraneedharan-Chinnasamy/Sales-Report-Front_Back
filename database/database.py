@@ -20,6 +20,7 @@ DATABASES = {
     "PRT9X2C6YBMLV0F": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/prathiksham",
     "BEE7W5ND34XQZRM": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/beelittle",
     "ADBXOUERJVK038L": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/adoreaboo",
+    "Authentication": f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/task_db",
 }
 # Maintain separate session makers for each DB
 engines = {
@@ -52,7 +53,8 @@ BUSINESS_CODE_MAP = {
     "ZNG45F8J27LKMNQ": "zing",
     "PRT9X2C6YBMLV0F": "prathiksham",
     "BEE7W5ND34XQZRM": "beelittle",
-    "ADBXOUERJVK038L" : "adoreaboo"
+    "ADBXOUERJVK038L" : "adoreaboo",
+    "Authentication":"task_db"
 }
 
 def get_business_name(business_code: str) -> str:

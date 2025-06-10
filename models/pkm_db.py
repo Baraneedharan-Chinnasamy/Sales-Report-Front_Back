@@ -83,3 +83,23 @@ class ViewsAtc(Base):
 
     # Relationship with Items Table
     item_viewsatc = relationship("Item", back_populates="viewsatc")
+
+def get_db_to_attr_map():
+    return {
+        "__Batch": "batch",
+        "__Collection_You_Will_Love": "collection_you_will_love",
+        "__Details": "details",
+        "__Eorder__": "eorder",
+        "__Launch_Date": "launch_date",
+        "__Mood": "mood",
+        "__New_Item_Type": "new_item_type",
+        "__New_Launch": "new_launch",
+        "__Offer_Date": "offer_date",
+        "__Office_Wear_Collection": "office_wear_collection",
+        "__Price": "price",
+        "__Print_Type": "print_type",
+        "__Quadrant": "quadrant",
+        "__Restock_Date": "restock_date",
+        "__Style_Type": "style_type",
+        "Feeding_Friendly": "feeding_friendly"
+    }

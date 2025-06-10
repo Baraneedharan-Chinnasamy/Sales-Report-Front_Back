@@ -3,6 +3,7 @@ import warnings
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.inspection import inspect
 from utilities.functions import load_targets, calculate_historical_stock, get_unique_periods, filter_active_targets
 
 warnings.filterwarnings("ignore", category=pd.errors.SettingWithCopyWarning)
@@ -85,18 +86,39 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
                 item_cols.append(attr)
 
     item_query = db.query(*item_cols, age_or_size_col)
+    # Field mapping resolution
+    if hasattr(models, "get_db_to_attr_map"):
+        field_mapping = models.get_db_to_attr_map()
+    else:
+        mapper = inspect(models.Item)
+        field_mapping = {
+            column.name: column.key
+            for column in mapper.columns
+            if column.key not in {"Item_Id", "Updated_At", "Created_At"}
+    }
 
     if item_filter:
         for field_name, conditions in item_filter.items():
+            # Try mapped attribute first, fallback to field_name if it's a valid column on the model
+            actual_attr = field_mapping.get(field_name, field_name)
+            
+            if not hasattr(models.Item, actual_attr):
+                print(f"Warning: filter field '{field_name}' not found in model — skipping")
+                continue
+
+            column_attr = getattr(models.Item, actual_attr)
+
             for condition in conditions:
                 op = condition.get("operator")
                 value = condition.get("value")
+
                 if isinstance(value, list) and len(value) == 1 and isinstance(value[0], list):
                     value = value[0]
+
                 if op == "In":
-                    item_query = item_query.filter(getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
+                    item_query = item_query.filter(column_attr.in_([value] if isinstance(value, str) else value))
                 elif op == "Not_In":
-                    item_query = item_query.filter(~getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
+                    item_query = item_query.filter(~column_attr.in_([value] if isinstance(value, str) else value))
 
     item_df = pd.DataFrame([row._asdict() for row in item_query.all()])
     if item_df.empty:

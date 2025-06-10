@@ -54,5 +54,20 @@
                 "timestamp": "2025-05-22"
             }
         ]
+    },
+    {
+        "Business_Name": "ZNG45F8J27LKMNQ",
+        "Start_Date": "2025-05-01",
+        "Target_Column": "Category",
+        "Target_Key": "Kurta Set",
+        "Target_Value": 10000,
+        "Uploaded_At": "2025-06-06 14:02:40",
+        "Status_History": [
+            {
+                "status": true,
+                "timestamp": "2025-06-01"
+            }
+        ]
     }
+    
 ]

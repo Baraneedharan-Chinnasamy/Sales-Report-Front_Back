@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
 import os, json, pandas as pd
+
+from Authentication.functions import get_current_user, verify_access_token_cookie
+from models.task import User
 
 router = APIRouter()
 
@@ -16,7 +19,7 @@ class TargetEntry(BaseModel):
     Target_Value: int
 
 @router.post("/set-daily-targets")
-def set_targets(data: List[TargetEntry]):
+def set_targets(data: List[TargetEntry],token=Depends(verify_access_token_cookie)):
     existing = []
     if os.path.exists(TARGET_FILE_PATH):
         with open(TARGET_FILE_PATH) as f:
@@ -37,7 +40,7 @@ def set_targets(data: List[TargetEntry]):
     return {"message": "Targets added", "count": len(data)}
 
 @router.get("/list-targets-with-status")
-def list_targets_with_status(business_name: str):
+def list_targets_with_status(business_name: str,token=Depends(verify_access_token_cookie)):
     if not os.path.exists(TARGET_FILE_PATH):
         return []
 

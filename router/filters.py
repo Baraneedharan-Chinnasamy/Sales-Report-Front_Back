@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Query, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from Authentication.functions import get_current_user, verify_access_token_cookie
 from database.database import get_db
+from models.task import User
 from utilities.columns import get_field_values, get_item_columns
 from utilities.generic_utils import get_models
 
 router = APIRouter()
 
 @router.get("/filter/available-fields")
-def available_fields(business: str, db: Session = Depends(get_db)):
+def available_fields(business: str, db: Session = Depends(get_db),token=Depends(verify_access_token_cookie)):
     try:
         models = get_models(business)
         fields = list(get_item_columns(models).keys())
@@ -23,7 +25,8 @@ def field_values(
     search: str = "",
     offset: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token=Depends(verify_access_token_cookie)
 ):
     try:
         models = get_models(business)

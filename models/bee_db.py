@@ -37,15 +37,12 @@ class Item(Base):
     Weave_Type = Column(String(255), nullable=True)
     Weight = Column(String(255), nullable=True)
     Width = Column(String(255), nullable=True)
-    
-
     # Handling column names with __ and spaces
     batch = Column(String(255), nullable=True, name="__Batch")
     bottom_fabric = Column(String(255), nullable=True, name="__Bottom_Fabric")
     brand_name = Column(String(255), nullable=True, name="__Brand_Name")
     discounts = Column(String(255), nullable=True, name="__Discount")
     inventory_type = Column(String(255), nullable=True, name="__Inventory_Type")
-   
     launch_date = Column(Date, nullable=True, name="__Launch_Date")
     offer_date = Column(String(255), nullable=True, name="__Offer_Date")
     quadrant = Column(String(255), nullable=True, name="__Quadrant")
@@ -56,7 +53,6 @@ class Item(Base):
     seasons_style = Column(String(255), nullable=True, name="__Seasons_Style")
     supplier_name = Column(String(255), nullable=True, name="__Supplier_Name")
     Updated_At = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
-
     print_colour = Column(String(255), nullable=True, name="Print Colour")
     print_size = Column(String(255), nullable=True, name="Print Size")
     print_theme = Column(String(255), nullable=True, name="Print Theme")
@@ -105,3 +101,20 @@ class ViewsAtc(Base):
 
     # Relationship with Items Table
     item_viewsatc = relationship("Item", back_populates="viewsatc")
+
+def get_db_to_attr_map():
+    return {
+        "__Batch": "batch",
+        "__Bottom_Length": "bottom_length",
+        "__Bottom_Print": "bottom_print",
+        "__Bottom_Type": "bottom_type",
+        "__Collections": "collections",
+        "__Details": "details",
+        "__Dispatch_Time": "dispatch_time",
+        "__Launch_Date": "launch_date",
+        "__New_Arrivals": "new_arrivals",
+        "__Pack_Details": "pack_details",
+        "__Pocket": "pocket",
+        "__Top_Length": "top_length",
+        "__Waistband": "waistband"
+    }

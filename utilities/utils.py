@@ -9,6 +9,7 @@ from functools import lru_cache
 from utilities.functions import load_targets, calculate_historical_stock, get_unique_periods, filter_active_targets
 
 def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_name: str = None, aggregation="daily", item_filter: dict = None, compare_with=None):
+    print("Using models from:", models.__name__)
 
     Start_Date = pd.to_datetime(Start_Date)
     End_Date = pd.to_datetime(End_Date) if End_Date else Start_Date
@@ -63,21 +64,68 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
 
     age_or_size_col = getattr(models.Item, age_or_size_col_name)
     item_query = db.query(*item_cols, age_or_size_col)
+    
+    from sqlalchemy.inspection import inspect
 
+    # Step 1: Build field mapping
+    if hasattr(models, "get_db_to_attr_map"):
+        field_mapping = models.get_db_to_attr_map()
+    else:
+        mapper = inspect(models.Item)
+        field_mapping = {
+            column.name: column.key
+            for column in mapper.columns
+            if column.key not in {"Item_Id", "Updated_At", "Created_At"}
+        }
+
+    # Optional debug log
+    for db_column, attr_name in field_mapping.items():
+        print(f"DB Column: {db_column} → Attribute: {attr_name}")
+
+    # Step 2: Build base query for items
+    item_cols = [models.Item.Item_Id, models.Item.Item_Name, models.Item.Item_Type,
+                models.Item.Item_Code, models.Item.Sale_Price, models.Item.Current_Stock]
+
+    product_type_column = "Product_Type" if business_name == "BEE7W5ND34XQZRM" else "Category"
+    age_or_size_col_name = "Age" if business_name in ["BEE7W5ND34XQZRM", "ADBXOUERJVK038L"] else "Size"
+
+    # Add group-by column
+    if hasattr(models.Item, product_type_column):
+        item_cols.append(getattr(models.Item, product_type_column))
+    if hasattr(models.Item, age_or_size_col_name):
+        item_cols.append(getattr(models.Item, age_or_size_col_name))
+
+    item_query = db.query(*item_cols)
+
+    # Step 3: Apply item_filter if provided
     if item_filter:
         for field_name, conditions in item_filter.items():
+            # Try mapped attribute first, fallback to field_name if it's a valid column on the model
+            actual_attr = field_mapping.get(field_name, field_name)
+            
+            if not hasattr(models.Item, actual_attr):
+                print(f"Warning: filter field '{field_name}' not found in model — skipping")
+                continue
+
+            column_attr = getattr(models.Item, actual_attr)
+
             for condition in conditions:
                 op = condition.get("operator")
                 value = condition.get("value")
+
                 if isinstance(value, list) and len(value) == 1 and isinstance(value[0], list):
                     value = value[0]
-                if op == "In":
-                    item_query = item_query.filter(getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
-                elif op == "Not_In":
-                    item_query = item_query.filter(~getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
 
+                if op == "In":
+                    item_query = item_query.filter(column_attr.in_([value] if isinstance(value, str) else value))
+                elif op == "Not_In":
+                    item_query = item_query.filter(~column_attr.in_([value] if isinstance(value, str) else value))
+
+
+    # Step 4: Execute query and convert to DataFrame
     items_data = [row._asdict() for row in item_query.all()]
     items_df = pd.DataFrame(items_data)
+
 
     if items_df.empty:
         column_names = [col.key for col in item_cols] + [age_or_size_col_name]
@@ -126,17 +174,27 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
 
         if item_filter:
             for field_name, conditions in item_filter.items():
+                # Try mapped attribute first, fallback to field_name if it's a valid column on the model
+                actual_attr = field_mapping.get(field_name, field_name)
+                
+                if not hasattr(models.Item, actual_attr):
+                    print(f"Warning: filter field '{field_name}' not found in model — skipping")
+                    continue
+
+                column_attr = getattr(models.Item, actual_attr)
+
                 for condition in conditions:
                     op = condition.get("operator")
                     value = condition.get("value")
+
                     if isinstance(value, list) and len(value) == 1 and isinstance(value[0], list):
                         value = value[0]
+
                     if op == "In":
-                        prev_sale_query = prev_sale_query.filter(
-                            getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
+                        item_query = item_query.filter(column_attr.in_([value] if isinstance(value, str) else value))
                     elif op == "Not_In":
-                        prev_sale_query = prev_sale_query.filter(
-                            ~getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
+                        item_query = item_query.filter(~column_attr.in_([value] if isinstance(value, str) else value))
+
 
         prev_sale_query = prev_sale_query.join(models.Item, models.Sale.Item_Id == models.Item.Item_Id)
         prev_sale_data = prev_sale_query.group_by(models.Sale.Item_Id).all()
@@ -270,7 +328,8 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
                 "Number_Of_Item_Name_Sold": 0,
                 "Number_Of_Item_Code_Sold": 0
             })
-
+        total_target_value = 0
+        total_target_sales =0
         # Target-wise metrics
         for _, target in applicable_targets.iterrows():
             target_col = target["Target_Column"]
@@ -291,6 +350,8 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
                 continue
 
             target_available = target_items[target_items["Available"]].copy() if "Available" in target_items.columns else pd.DataFrame()
+
+            total_target_value += adjusted_target_value  
 
             target_sales = pd.DataFrame(columns=["Item_Id", "Quantity", "Total_Value"])
             if not sales_df.empty:
@@ -321,7 +382,7 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
 
             # continue in Part 5...
             total_sale_value = target_sales["Total_Value"].sum() if not target_sales.empty else 0
-
+            total_target_sales += total_sale_value  # Already calculated per target
             deviation = ((total_sale_value - adjusted_target_value) / adjusted_target_value * 100) if adjusted_target_value > 0 else 0
 
             prev_target_sales = 0
@@ -373,6 +434,12 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
                 })
 
             period_result["target_wise"].append(target_report)
+        period_result["Total_Target_Value"] = float(round(total_target_value, 0))
+        period_result["Total_Target_Sales"] = float(round(total_target_sales, 0))
+        if total_target_value > 0:
+            period_result["Total_Target_Percentage_Deviation"] = round(((total_target_sales - total_target_value) / total_target_value) * 100, 2)
+        else:
+            period_result["Total_Target_Percentage_Deviation"] = 0
 
         final_results.append(period_result)
     if not final_results:
@@ -385,6 +452,9 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
     preferred_field_order = [
         "Date",
         "Total_Sale_Value",
+        "Total_Target_Value",
+        "Total_Target_Sales",
+        "Total_Target_Percentage_Deviation",
         "Sale_Growth_Percentage",
         "Sell_Through_Rate",
         "Conversion_Rate",
@@ -448,12 +518,24 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
     total_quantity_all = sum(r.get("Total_Quantity_Sold", 0) for r in ordered_results)
     total_Views_all = sum(r.get("Total_Items_Viewed",0) for r in ordered_results)
     total_Atc_all = sum(r.get("Total_Items_Added_To_Cart",0) for r in ordered_results)
-
+    total_target_value_all = sum(r.get("Total_Target_Value", 0) for r in ordered_results)
+    total_target_sales_all = sum(r.get("Total_Target_Sales", 0) for r in ordered_results)
+    summary_target_deviation = ((total_target_sales_all - total_target_value_all) / total_target_value_all * 100) if total_target_value_all > 0 else 0
     growth_graph_data = [{
         "period": r["Date"],
         "sale_value": r.get("Total_Sale_Value", 0),
         "growth_percentage": r.get("Sale_Growth_Percentage", 0)
     } for r in ordered_results]
+    target_sales_graph_data = [{
+    "period": r["Date"],
+    "target_sales": r.get("Total_Target_Sales", 0),
+    "target_value": r.get("Total_Target_Value", 0),
+    "target_deviation_percentage": r.get("Total_Target_Percentage_Deviation", 0)} for r in ordered_results]
+    target_value_graph_data = [{
+    "period": r["Date"],
+    "target_value": r.get("Total_Target_Value", 0)
+    } for r in ordered_results]
+
 
     # Historical stock at start
     historical_stock_df = calculate_historical_stock(db, models, items_df, Start_Date)
@@ -470,8 +552,13 @@ def daily_sale_report(db: Session, models, Start_Date, End_Date=None, business_n
             "Total_Items_Viewed":int(total_Views_all),
             "Total_Items_Added_To_Cart":int(total_Atc_all),
             "Sell_Through_Rate": round(sell_through_summary, 2),
+            "Total_Target_Value": float(total_target_value_all),
+            "Total_Target_Sales": float(total_target_sales_all),
+            "Total_Target_Percentage_Deviation": round(summary_target_deviation, 2),
             "aggregation": aggregation,
-            "growth_graph_data": growth_graph_data
+            "growth_graph_data": growth_graph_data,
+            "target_sales_graph_data": target_sales_graph_data,
+            "target_value_graph_data":target_value_graph_data
         }
     }
 

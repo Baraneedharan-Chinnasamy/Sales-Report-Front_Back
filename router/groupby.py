@@ -8,7 +8,9 @@ import pandas as pd
 import numpy as np
 from typing import Optional
 
+from Authentication.functions import get_current_user, verify_access_token_cookie
 from database.database import get_db
+from models.task import User
 from utilities.generic_utils import get_models
 from utilities.MainGroupBy import agg_grp
 import asyncio
@@ -27,7 +29,8 @@ async def groupby_aggregation(
     data_fields: str = Query(..., description="JSON list of all required fields (dimensions + aggregations)"),
     groupby: str = Query(..., description="JSON list of columns to group by"),
     item_filter: Optional[str] = Query(None, description="Optional JSON filter for items"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token=Depends(verify_access_token_cookie)
 ):
     try:
         # Parse incoming parameters

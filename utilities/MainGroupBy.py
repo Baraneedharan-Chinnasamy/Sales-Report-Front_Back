@@ -14,7 +14,7 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
 
     all_requested_fields = set(data_fields)
 
-   # Map derived columns back to raw columns required by processor functions
+# Map derived columns back to raw columns required by processor functions
     derived_column_dependencies = {
         "Print_Style_1": "print_style",
         "Print_Style_2": "print_style",
@@ -26,6 +26,7 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
         "Print_Colour_2": "print_colour",
         "Colour_1": "Colour",
         "Colour_2": "Colour",
+        "__Batch":"batch"
     }
 
     # Automatically include required raw columns for derived fields
@@ -43,8 +44,8 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
     group_by_dic_map = {
         "BEE7W5ND34XQZRM": (group_by_bee, process_beelittle),
         "PRT9X2C6YBMLV0F": (group_by_dic_prathisham, process_prathiksham),
-        "zing": (group_by_dic_zing, process_zing),
-        "adoreaboo": (group_by_dic_adb, None),
+        "ZNG45F8J27LKMNQ": (group_by_dic_zing, process_zing),
+        "ADBXOUERJVK038L": (group_by_dic_adb, None),
     }
 
     if business not in group_by_dic_map:
@@ -58,17 +59,44 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
     ])
 
     # Apply item filters
+    # Apply item filters
     item_filter = filter_dict.get("item_filter", {})
+
+    # Resolve field mapping
+    field_mapping = {}
+    if hasattr(models, "get_db_to_attr_map"):
+        field_mapping = models.get_db_to_attr_map()
+    else:
+        from sqlalchemy.inspection import inspect
+        mapper = inspect(models.Item)
+        field_mapping = {
+            column.name: column.key
+            for column in mapper.columns
+            if column.key not in {"Item_Id", "Updated_At", "Created_At"}
+        }
+
     for field_name, conditions in item_filter.items():
+        # Use mapped attribute if available; else fallback to field_name if it exists
+        model_attr = field_mapping.get(field_name, field_name)
+
+        if not hasattr(models.Item, model_attr):
+            print(f"Warning: filter field '{field_name}' not found in model — skipping")
+            continue
+
+        column_attr = getattr(models.Item, model_attr)
+
         for condition in conditions:
             op = condition.get("operator")
             value = condition.get("value")
+
             if isinstance(value, list) and len(value) == 1 and isinstance(value[0], list):
                 value = value[0]
+
             if op == "In":
-                item_query = item_query.filter(getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
+                item_query = item_query.filter(column_attr.in_([value] if isinstance(value, str) else value))
             elif op == "Not_In":
-                item_query = item_query.filter(~getattr(models.Item, field_name).in_([value] if isinstance(value, str) else value))
+                item_query = item_query.filter(~column_attr.in_([value] if isinstance(value, str) else value))
+
 
     item_data = [row._asdict() for row in item_query.all()]
     t1 = pd.DataFrame(item_data)

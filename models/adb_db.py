@@ -33,7 +33,7 @@ class Item(Base):
     Top = Column(String(255), nullable=True)
     Weave_Type = Column(String(255), nullable=True)
     age_category = Column(String(255), nullable=True, name = "__Age_Category")
-    batch = Column(String(255), nullable=True, name = "__Batch")
+    Batch = Column(String(255), nullable=True, name = "__Batch")
     bottom_fabric = Column(String(255), nullable=True, name = "__Bottom_Fabric")
     launch_date = Column(Date, nullable=True, name = "__Launch_Date")
     neck_closure = Column(String(255), nullable=True, name = "__Neck_Closure")
@@ -66,3 +66,17 @@ class ViewsAtc(Base):
     Average_Views = Column(DECIMAL(10, 2), nullable=True)
     Average_Addtocarts = Column(DECIMAL(10, 2), nullable=True)
     Updated_At = Column(TIMESTAMP, nullable=True, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
+
+
+def get_db_to_attr_map():
+    return {
+        "__Age_Category": "age_category",
+        "__Batch": "batch",
+        "__Bottom_Fabric": "bottom_fabric",
+        "__Launch_Date": "launch_date",
+        "__Neck_Closure": "neck_closure",
+        "__Print_Size": "print_size",
+        "__Product_Category": "product_category",
+        "__Product_Type": "product_type",
+        "__Restock_Status": "restock_status"
+    }

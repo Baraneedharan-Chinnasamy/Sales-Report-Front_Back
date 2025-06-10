@@ -2,7 +2,9 @@ from fastapi import APIRouter, Query, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import Optional
+from Authentication.functions import get_current_user, verify_access_token_cookie
 from database.database import get_db
+from models.task import User
 from utilities.generic_utils import get_models
 from utilities.detiled import detiled
 from utilities.clean import clean_json
@@ -22,7 +24,8 @@ async def detiles_report(
     col: str = Query(...),
     group_by: Optional[str] = None,
     item_filter: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token=Depends(verify_access_token_cookie)
 ):
     try:
         models = get_models(business)

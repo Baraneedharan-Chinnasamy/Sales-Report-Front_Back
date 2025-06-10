@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 from typing import Optional
 from sqlalchemy.orm import Session
+from Authentication.functions import get_current_user, verify_access_token_cookie
 from database.database import get_db
+from models.task import User
 from utilities.utils import daily_sale_report
 from utilities.generic_utils import get_models
 from decimal import Decimal
@@ -27,7 +29,8 @@ async def daily_report(
     business: str = Query(...),
     item_filter: Optional[str] = None,
     compare_with: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    token=Depends(verify_access_token_cookie)
 ):
     try:
         models = get_models(business)

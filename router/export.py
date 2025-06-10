@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Any
@@ -6,6 +6,9 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import json, re, traceback
+
+from Authentication.functions import get_current_user, verify_access_token_cookie
+from models.task import User
 
 router = APIRouter()
 
@@ -30,7 +33,7 @@ class ExportRequest(BaseModel):
     data: List[Any]
 
 @router.post("/export-to-sheet")
-async def export_to_sheet(payload: ExportRequest):
+async def export_to_sheet(payload: ExportRequest,token=Depends(verify_access_token_cookie)):
     try:
         url = BRAND_SHEET_MAP.get(payload.brand.upper())
         if not url:
