@@ -62,3 +62,53 @@ def list_targets_with_status(business_name: str,token=Depends(verify_access_toke
         t["Status"] = last_status
         result.append(t)
     return result
+
+class UpdateTargetRequest(BaseModel):
+    Business_Name: str
+    Target_Column: str
+    Target_Key: str
+    Start_Date: str
+    status: bool = None  # Optional
+    Target_Value: int = None  
+
+@router.post("/update-target-entry")
+def update_target_entry(data: UpdateTargetRequest):
+    if not os.path.exists(TARGET_FILE_PATH):
+        return {"error": "Target data not found."}
+
+    with open(TARGET_FILE_PATH, "r") as f:
+        targets = json.load(f)
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    updated = False
+
+    for target in targets:
+        if (
+            target["Business_Name"].strip().lower() == data.Business_Name.strip().lower()
+            and target["Target_Column"].strip().lower() == data.Target_Column.strip().lower()
+            and target["Target_Key"].strip().lower() == data.Target_Key.strip().lower()
+            and target["Start_Date"] == data.Start_Date
+        ):
+            # Update Target Value if given
+            if data.Target_Value is not None:
+                target["Target_Value"] = data.Target_Value
+
+            # Add new status to history if provided
+            if data.status is not None:
+                if "Status_History" not in target:
+                    target["Status_History"] = []
+                target["Status_History"].append({
+                    "status": data.status,
+                    "timestamp": now
+                })
+
+            updated = True
+            break
+
+    if not updated:
+        return {"error": "Target not found."}
+
+    with open(TARGET_FILE_PATH, "w") as f:
+        json.dump(targets, f, indent=4)
+
+    return {"message": "Target updated successfully."}
