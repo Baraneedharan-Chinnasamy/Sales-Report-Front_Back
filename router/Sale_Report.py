@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from Authentication.functions import get_current_user, verify_access_token_cookie
 from database.database import get_db
 from models.task import User
-from utilities.utils import daily_sale_report
+from SaleReport.utils import daily_sale_report
 from utilities.generic_utils import get_models
 from decimal import Decimal
 import json, traceback, asyncio
@@ -21,7 +21,7 @@ class DecimalEncoder(json.JSONEncoder):
 async def run_in_thread(fn, *args):
     return await asyncio.to_thread(fn, *args)
 
-@router.get("/daily-report")
+@router.get("/Sale-report")
 async def daily_report(
     Start_Date: str,
     End_Date: Optional[str] = None,

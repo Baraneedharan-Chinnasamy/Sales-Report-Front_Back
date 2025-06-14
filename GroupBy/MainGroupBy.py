@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from utilities.functions import (
     process_beelittle, process_prathiksham, process_zing)
-from utilities.Grouping import (
+from GroupBy.Grouping import (
     group_by_bee, group_by_dic_prathisham, group_by_dic_zing, group_by_dic_adb)
 
 

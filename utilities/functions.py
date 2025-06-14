@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 import numpy as np
-from utilities.Grouping import (
+from GroupBy.Grouping import (
     group_by_bee, group_by_dic_prathisham, group_by_dic_zing, group_by_dic_adb)
 from functools import lru_cache
 
@@ -163,35 +163,6 @@ def process_beelittle(t1):
     fabric_map = {"cotton": "Cotton", "Mulmul": "MulMul", "Crinkle fabric": "Crinkle", "Organic Cotton,Muslin": "Muslin,Organic Cotton", "Velvet,Cotton": "Cotton,Velvet", "Tissue,Crepe": "Crepe,Tissue"}
     pack_size_map = {"1-pack": "1-Pack"}
     product_type_map = {"Hoodie,Sweater": "Hoodie, Sweater", "Sweater,Hoodie": "Hoodie, Sweater", "Cap Mittens Booties": "Cap, Mittens, Booties", "Jabla,Top": "Jabla, Top", "Top,Jabla": "Jabla, Top", "Sweater , Pant": "Sweater and Pant"}
-
-    def process_style_theme_motif(item, label):
-        if not item or not isinstance(item, str):
-            return [f"Multi-{label} Design"]
-        items = item.split(", ")
-        return items[:2] if len(items) <= 2 else [f"Multi-{label} Design"]
-
-    def split_and_expand(df, col, new_col_1, new_col_2, label):
-        if col in df.columns:
-            df[col] = df[col].apply(lambda x: process_style_theme_motif(x, label))
-            df[[new_col_1, new_col_2]] = pd.DataFrame(df[col].tolist(), index=df.index)
-            df[new_col_2] = df[new_col_2].fillna("None")
-            df.drop(columns=[col], inplace=True)
-        return df
-
-    for col, col1, col2, label in [
-        ("print_style", "Print_Style_1", "Print_Style_2", "Style"),
-        ("print_theme", "Print_Theme_1", "Print_Theme_2", "Theme"),
-        ("print_key_motif", "Print_Key_Motif_1", "Print_Key_Motif_2", "Key Motif"),
-        ("print_colour", "Print_Colour_1", "Print_Colour_2", "print_colour"),
-    ]:
-        t1 = split_and_expand(t1, col, col1, col2, label)
-
-    if "Colour" in t1.columns:
-        t1["Colour"] = t1["Colour"].apply(lambda x: x if isinstance(x, list) else [x])
-        t1["Colour"] = t1["Colour"].apply(lambda x: x[:2] if len(x) >= 2 else x + ["None"])
-        t1[["Colour_1", "Colour_2"]] = pd.DataFrame(t1["Colour"].tolist(), index=t1.index)
-        t1.drop(columns=["Colour"], inplace=True)
-
     if "restock_status" in t1.columns:
         t1["restock_status"] = t1["restock_status"].replace(restock_status_map)
     if "Age" in t1.columns:

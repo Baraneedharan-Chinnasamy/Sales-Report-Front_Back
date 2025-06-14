@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 import traceback
-
 from Authentication.functions import  verify_access_token_cookie
 from database.database import get_db
 from models.task import User

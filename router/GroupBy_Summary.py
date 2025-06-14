@@ -12,7 +12,7 @@ from Authentication.functions import get_current_user, verify_access_token_cooki
 from database.database import get_db
 from models.task import User
 from utilities.generic_utils import get_models
-from utilities.MainGroupBy import agg_grp
+from GroupBy.MainGroupBy import agg_grp
 import asyncio
 import traceback
 
@@ -21,7 +21,7 @@ router = APIRouter()
 async def run_in_thread(fn, *args):
     return await asyncio.to_thread(fn, *args)
 
-@router.get("/groupby/aggregation", summary="Perform group-by aggregation for items")
+@router.get("/groupby-summary")
 async def groupby_aggregation(
     business: str = Query(..., description="Business name (e.g., beelittle)"),
     Start_Date: Optional[str] = Query(None, description="Start date in YYYY-MM-DD format"),

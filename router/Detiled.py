@@ -6,7 +6,7 @@ from Authentication.functions import get_current_user, verify_access_token_cooki
 from database.database import get_db
 from models.task import User
 from utilities.generic_utils import get_models
-from utilities.detiled import detiled
+from SaleReport.detiled import detiled
 from utilities.clean import clean_json
 import pandas as pd, traceback, json, asyncio
 
@@ -15,7 +15,7 @@ router = APIRouter()
 async def run_in_thread(fn, *args):
     return await asyncio.to_thread(fn, *args)
 
-@router.get("/detiles")
+@router.get("Sale-Report/Detiled")
 async def detiles_report(
     Start_Date: str,
     End_Date: Optional[str] = None,

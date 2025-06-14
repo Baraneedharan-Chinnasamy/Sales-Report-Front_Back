@@ -18,7 +18,7 @@ class TargetEntry(BaseModel):
     Target_Key: str 
     Target_Value: int
 
-@router.post("/set-daily-targets")
+@router.post("target/set-daily-targets")
 def set_targets(data: List[TargetEntry],token=Depends(verify_access_token_cookie)):
     existing = []
     if os.path.exists(TARGET_FILE_PATH):
@@ -39,7 +39,7 @@ def set_targets(data: List[TargetEntry],token=Depends(verify_access_token_cookie
 
     return {"message": "Targets added", "count": len(data)}
 
-@router.get("/list-targets-with-status")
+@router.get("target/list-targets-with-status")
 def list_targets_with_status(business_name: str,token=Depends(verify_access_token_cookie)):
     if not os.path.exists(TARGET_FILE_PATH):
         return []
@@ -71,7 +71,7 @@ class UpdateTargetRequest(BaseModel):
     status: bool = None  # Optional
     Target_Value: int = None  
 
-@router.post("/update-target-entry")
+@router.post("target/update-target-entry")
 def update_target_entry(data: UpdateTargetRequest):
     if not os.path.exists(TARGET_FILE_PATH):
         return {"error": "Target data not found."}
