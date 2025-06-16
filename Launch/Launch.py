@@ -9,7 +9,38 @@ from sqlalchemy.inspection import inspect
 def generate_inventory_summary(db: Session, models, days: int, group_by: str, business: str, 
                               item_filter: dict = None, variation_columns: list = None, 
                               launch_date_filter: str = None):
-
+    print("variation_columns", variation_columns)
+    print("business", business)
+    
+    # Resolve field mapping for variation columns
+    field_mapping = {}
+    if hasattr(models, "get_db_to_attr_map"):
+        field_mapping = models.get_db_to_attr_map()
+    else:
+        mapper = inspect(models.Item)
+        field_mapping = {
+            column.name: column.key
+            for column in mapper.columns
+            if column.key not in {"Item_Id", "Updated_At", "Created_At"}
+        }
+    
+    # Map variation columns to their actual database column names
+    mapped_variation_columns = []
+    if variation_columns:
+        for col in variation_columns:
+            # Check if column needs mapping
+            mapped_col = field_mapping.get(col, col)
+            
+            # Verify the mapped column exists in the model
+            if hasattr(models.Item, mapped_col):
+                mapped_variation_columns.append(mapped_col)
+                print(f"Mapped variation column: {col} -> {mapped_col}")
+            else:
+                print(f"Warning: Variation column '{col}' (mapped to '{mapped_col}') does not exist in Item model - skipping")
+        
+        # Update variation_columns to use mapped names
+        variation_columns = mapped_variation_columns
+    
     # Validate and set grouping columns
     if group_by.lower() == "item_id":
         grp = ["Item_Id"]
@@ -24,39 +55,22 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
     # Set category column based on business
     colu = "Product_Type" if business.upper() == "BEE7W5ND34XQZRM" else "Category"
     
-    if hasattr(models, "get_db_to_attr_map"):
-        field_mapping = models.get_db_to_attr_map()
-    else:
-        mapper = inspect(models.Item)
-        field_mapping = {
-            column.name: column.key
-            for column in mapper.columns
-            if column.key not in {"Item_Id", "Updated_At", "Created_At"}
-        }
-
     # Build base query attributes - always include base columns
     base_query_attrs = ["Item_Id", "Item_Name", "Item_Type", "Sale_Price", "Sale_Discount",
-                       "Current_Stock", "launch_date", "Item_Code"]
+                       "Current_Stock", "launch_date"]
     
     # Add business-specific columns
     if business == "BEE7W5ND34XQZRM":
-        base_query_attrs.extend(["Product_Type", "batch"])
+        base_query_attrs.extend(["Product_Type"])
     else:
-        base_query_attrs.extend(["Category", "batch" if business in ["PRT9X2C6YBMLV0F", "ZNG45F8J27LKMNQ"] else ""])
+        base_query_attrs.extend(["Category" if business in ["PRT9X2C6YBMLV0F", "ZNG45F8J27LKMNQ"] else ""])
     
-    # Add variation columns to query if specified
+    # Add mapped variation columns to query
     query_attrs = base_query_attrs.copy()
     if variation_columns:
-        # Validate variation columns exist in the model
-        valid_variation_columns = []
         for col in variation_columns:
-            if hasattr(models.Item, col):
-                valid_variation_columns.append(col)
-                if col not in query_attrs:
-                    query_attrs.append(col)
-            else:
-                print(f"Warning: Column '{col}' does not exist in Item model - skipping")
-        variation_columns = valid_variation_columns
+            if col not in query_attrs:
+                query_attrs.append(col)
     
     # Remove empty strings from query_attrs
     query_attrs = [attr for attr in query_attrs if attr]
@@ -66,6 +80,7 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
         """Apply item_filter to a query"""
         if item_filter:
             for field_name, conditions in item_filter.items():
+                # Apply field mapping for filter fields as well
                 actual_attr = field_mapping.get(field_name, field_name)
                 
                 if not hasattr(models.Item, actual_attr):
@@ -230,7 +245,6 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
         # Aggregate data by grouping columns
         agg_dict = {
             'Item_Id': 'first' if group_by.lower() == "item_name" else 'first',
-            'Item_Code': 'first',
             'Current_Stock': 'sum',
             'launch_date': 'min',
             'Period_Days': 'first',
@@ -240,10 +254,10 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
         
         # Add variation columns to aggregation if they exist
         if variation_columns:
+            print("Adding variation columns to aggregation")
             for col in variation_columns:
                 if col in t1.columns:
                     agg_dict[col] = lambda x: ', '.join(sorted(set(x.dropna().astype(str))))
-
         
         t1_agg = t1.groupby(grp, as_index=False).agg(agg_dict)
         t2_agg = t2_filtered.groupby(grp, as_index=False)[['Quantity', 'Total_Value']].sum() if not t2_filtered.empty else pd.DataFrame(columns=grp + ['Quantity', 'Total_Value'])
@@ -264,7 +278,23 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
 
     # Process both periods
     first_period_results = process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, first_period_df, "first_period", group_by, grp, variation_columns)
+    print("Available columns in first_period_results:", first_period_results.columns.tolist())
     second_period_results = process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, second_period_df, "second_period", group_by, grp, variation_columns)
+    print("Available columns in second_period_results:", second_period_results.columns.tolist())
+    
+    if variation_columns:
+        for col in variation_columns:
+            x_col = f"{col}_x"
+            y_col = f"{col}_y"
+            if x_col in first_period_results.columns:
+                first_period_results[col] = first_period_results[x_col]
+            elif y_col in first_period_results.columns:
+                first_period_results[col] = first_period_results[y_col]
+
+            if x_col in second_period_results.columns:
+                second_period_results[col] = second_period_results[x_col]
+            elif y_col in second_period_results.columns:
+                second_period_results[col] = second_period_results[y_col]
 
     # Define common columns for the combined results
     common_cols = ["Item_Id", "Item_Name", "Item_Type", colu, "Sale_Discount", "launch_date", 
@@ -277,11 +307,10 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
 
     # Add variation columns to common columns if they exist in the results
     if variation_columns:
+        print("Checking for variation columns in results")
         for col in variation_columns:
             if col in first_period_results.columns:
-                print("Hi")
                 common_cols.append(col)
-    print(common_cols)
     
     # Get period-specific columns
     first_period_specific_cols = [col for col in first_period_results.columns 
@@ -293,7 +322,6 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
                                   (col.startswith("Predicted_Quantity_Next") and "second_period" in col)]
     
     # Create combined results
-   
     combined_results = first_period_results[common_cols].copy()
     
     # Add first period specific columns
@@ -303,6 +331,12 @@ def generate_inventory_summary(db: Session, models, days: int, group_by: str, bu
     # Add second period specific columns with a single merge
     join_cols = ['Item_Id'] if group_by.lower() == "item_id" else grp
     second_period_cols = join_cols + second_period_specific_cols
+    
+    # Drop overlapping variation columns from second_period_results to avoid suffixes
+    if variation_columns:
+        drop_cols = [col for col in variation_columns if col in second_period_results.columns and col not in join_cols]
+        second_period_results = second_period_results.drop(columns=drop_cols)
+
     combined_results = pd.merge(combined_results, second_period_results[second_period_cols], on=join_cols, how='left')
     combined_results = combined_results.loc[:, ~combined_results.columns.duplicated()]
     

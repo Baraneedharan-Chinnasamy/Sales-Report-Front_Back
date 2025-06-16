@@ -15,7 +15,7 @@ router = APIRouter()
 async def run_in_thread(fn, *args):
     return await asyncio.to_thread(fn, *args)
 
-@router.get("Sale-Report/Detiled")
+@router.get("/Sale-Report/Detiled")
 async def detiles_report(
     Start_Date: str,
     End_Date: Optional[str] = None,

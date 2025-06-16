@@ -6,7 +6,6 @@ from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import json, re, traceback
-
 from Authentication.functions import get_current_user, verify_access_token_cookie
 from models.task import User
 

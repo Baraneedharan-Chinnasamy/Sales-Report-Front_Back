@@ -38,7 +38,6 @@ group_by_dic_prathisham = {
     "Per_Day_Quantity": "mean",
     "Per_Day_View": "mean",
     "Per_Day_atc": "mean",
-    "Days_Until_Stockout": "mean",
     "Conversion_Percentage": "mean"
 }
 group_by_bee = {
@@ -96,7 +95,6 @@ group_by_bee = {
     "Per_Day_Quantity": "mean",
     "Per_Day_View": "mean",
     "Per_Day_atc": "mean",
-    "Days_Until_Stockout": "mean",
     "Conversion_Percentage": "mean"
 }
 group_by_dic_zing = {
@@ -134,7 +132,6 @@ group_by_dic_zing = {
     "Per_Day_Quantity": "mean",
     "Per_Day_View": "mean",
     "Per_Day_atc": "mean",
-    "Days_Until_Stockout": "mean",
     "Conversion_Percentage": "mean"
 }
 
@@ -180,6 +177,5 @@ group_by_dic_adb = {
     "Per_Day_Quantity": "mean",
     "Per_Day_View": "mean",
     "Per_Day_atc": "mean",
-    "Days_Until_Stockout": "mean",
     "Conversion_Percentage": "mean"
 }

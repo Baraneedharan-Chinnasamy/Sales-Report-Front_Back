@@ -59,7 +59,6 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
     ])
 
     # Apply item filters
-    # Apply item filters
     item_filter = filter_dict.get("item_filter", {})
 
     # Resolve field mapping
@@ -171,12 +170,8 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
             0
         )
         t1["Per_Day_Quantity"] = round((t1["Per_Day_Quantity"]),2)
-        t1["Days_Until_Stockout"] = np.where(
-            t1["Per_Day_Quantity"] > 0, 
-            t1["Current_Stock"] / t1["Per_Day_Quantity"], 
-            np.inf  # Will be replaced with a large number later
-        )
-        t1["Days_Until_Stockout"] = round((t1["Days_Until_Stockout"]),2)
+        
+        
 
     # Views/ATC-based fields
     if any(f in agg_fields for f in [
@@ -221,7 +216,6 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
             (t1["Total_Quantity"] / t1["Total_Item_Atc"]) * 100, 0)
         t1["Conversion_Percentage"] = round((t1["Conversion_Percentage"]),2)
 
-    # Clean up any remaining NaN/inf values before aggregation
     # Replace inf with a reasonable large number (e.g., 999999)
     t1.replace([np.inf, -np.inf], 999999, inplace=True)
     
