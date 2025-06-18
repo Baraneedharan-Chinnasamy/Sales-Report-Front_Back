@@ -7,7 +7,7 @@ from GroupBy.Grouping import (
     group_by_bee, group_by_dic_prathisham, group_by_dic_zing, group_by_dic_adb)
 
 
-def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_date=None, end_date=None):
+def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict,launch_agg=None,launch_date= None, start_date=None, end_date=None):
     # Parse date range
     start_date = pd.to_datetime(start_date) if start_date else None
     end_date = pd.to_datetime(end_date) if end_date else None
@@ -57,7 +57,7 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
     item_query = db.query(*[
         getattr(models.Item, col) for col in required_columns if hasattr(models.Item, col)
     ])
-
+ 
     # Apply item filters
     item_filter = filter_dict.get("item_filter", {})
 
@@ -95,6 +95,15 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
                 item_query = item_query.filter(column_attr.in_([value] if isinstance(value, str) else value))
             elif op == "Not_In":
                 item_query = item_query.filter(~column_attr.in_([value] if isinstance(value, str) else value))
+            elif op == "Less_Than_Or_Equal":
+                item_query = item_query.filter(column_attr <= value)
+            elif op == "Greater_Than_Or_Equal":
+                item_query = item_query.filter(column_attr >= value)
+            elif op == "Between":
+                if isinstance(value, list) and len(value) == 2:
+                    item_query = item_query.filter(column_attr.between(value[0], value[1]))
+                else:
+                    print(f"Warning: 'Between' operator for field '{field_name}' requires exactly two values — skipping")
 
 
     item_data = [row._asdict() for row in item_query.all()]
@@ -171,8 +180,6 @@ def agg_grp(db, models, business, filter_dict, data_fields, groupby_dict, start_
         )
         t1["Per_Day_Quantity"] = round((t1["Per_Day_Quantity"]),2)
         
-        
-
     # Views/ATC-based fields
     if any(f in agg_fields for f in [
         "Total_Item_Viewed", "Total_Item_Atc", "Per_Day_View", "Per_Day_atc", "Conversion_Percentage"

@@ -28,7 +28,7 @@ def get_field_values(field_name, search, db, models, offset=0, limit=100):
     total = query.count()  # total matching rows
     results = query.order_by(column).offset(offset).limit(limit).all()
 
-    unique_values = [row[0] for row in results if row[0] is not None]
+    unique_values = [str(row[0]) for row in results if row[0] is not None]
 
     return {
         "field": field_name,

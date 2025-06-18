@@ -101,7 +101,7 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
         for field_name, conditions in item_filter.items():
             # Try mapped attribute first, fallback to field_name if it's a valid column on the model
             actual_attr = field_mapping.get(field_name, field_name)
-            
+
             if not hasattr(models.Item, actual_attr):
                 print(f"Warning: filter field '{field_name}' not found in model — skipping")
                 continue
@@ -119,6 +119,24 @@ def detiled(db: Session, models, colu, Start_Date, End_Date=None, business_name:
                     item_query = item_query.filter(column_attr.in_([value] if isinstance(value, str) else value))
                 elif op == "Not_In":
                     item_query = item_query.filter(~column_attr.in_([value] if isinstance(value, str) else value))
+                elif op == "Equal":
+                    item_query = item_query.filter(column_attr == value)
+                elif op == "Not_Equal":
+                    item_query = item_query.filter(column_attr != value)
+                elif op == "Less_Than":
+                    item_query = item_query.filter(column_attr < value)
+                elif op == "Greater_Than":
+                    item_query = item_query.filter(column_attr > value)
+                elif op == "Less_Than_Or_Equal":
+                    item_query = item_query.filter(column_attr <= value)
+                elif op == "Greater_Than_Or_Equal":
+                    item_query = item_query.filter(column_attr >= value)
+                elif op == "Between":
+                    if isinstance(value, list) and len(value) == 2:
+                        item_query = item_query.filter(column_attr.between(value[0], value[1]))
+                    else:
+                        print(f"Warning: 'Between' operator for field '{field_name}' requires exactly two values — skipping")
+
 
     item_df = pd.DataFrame([row._asdict() for row in item_query.all()])
     if item_df.empty:

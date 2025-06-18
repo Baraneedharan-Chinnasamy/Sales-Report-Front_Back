@@ -1,19 +1,15 @@
-# Updated process_period_data function with proper parameter sync
+# Corrected functions with days_left removed and proper Projected_Days_to_Sellout calculation
 import pandas as pd
 import numpy as np
 
 
-def process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, period_df, 
-                       period_name, group_by, grp, variation_columns=None):  # Added missing parameter
-    
+def calculate_alltime_metrics(df_final, temp_t2, t3_total, t5, t1, join_cols, group_by, grp):
     # Merge with alltime quantity data
-    join_cols = 'Item_Id' if group_by.lower() == "item_id" else grp
-    df_final = pd.merge(period_df, temp_t2, how="left", on=join_cols)
+    df_final = pd.merge(df_final, temp_t2, how="left", on=join_cols)
     df_final["Alltime_Total_Quantity"] = df_final["Alltime_Total_Quantity"].fillna(0)
     
     # Calculate derived columns using vectorized operations
     df_final["Total_Stock"] = df_final["Alltime_Total_Quantity"] + df_final["Current_Stock"]
-    df_final["Stock_Sold_Percentage"] = ((df_final["Quantity"] / df_final["Total_Stock"]) * 100).round(2).fillna(0)
     
     # Calculate days since launch
     df_final['launch_date'] = pd.to_datetime(df_final['launch_date'], errors='coerce')
@@ -38,18 +34,14 @@ def process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, p
         (df_final['Last_Sold_Date'] - df_final['launch_date']).dt.days, 0)
     df_final['Days_Sold_Out_Past'] = df_final['Days_Sold_Out_Past'].fillna(0)
     
-    if period_name == "first_period":
-        df_final["days_left"] = np.where(df_final["days_since_launch"] > days, days, df_final["days_since_launch"])
-    else:
-        df_final["days_left"] = np.where(df_final["days_since_launch"] > 2*days, days, df_final["days_since_launch"] - days)
-
-    # Ensure days_left is not zero to avoid division by zero
-    df_final["days_left"] = np.maximum(df_final["days_left"], 1)
-
-    # Calculate period-specific metrics using vectorized operations
-    df_final["Period_Perday_Quantity"] = df_final["Quantity"] / df_final["days_left"]
-    df_final["Period_Perday_View"] = df_final["Items_Viewed"] / df_final["days_left"]
-    df_final["Period_Perday_ATC"] = df_final["Items_Addedtocart"] / df_final["days_left"]
+    # Calculate sale price after discount
+    sale_price_after_discount = (df_final["Sale_Price"] * (100 - df_final["Sale_Discount"]) / 100)
+    df_final['Sale_Price_After_Discount'] = sale_price_after_discount
+    
+    # Calculate stock values (vectorized)
+    df_final["Alltime_Total_Quantity_Value"] = df_final["Alltime_Total_Quantity"] * sale_price_after_discount
+    df_final["Current_Stock_Value"] = df_final["Current_Stock"] * sale_price_after_discount
+    df_final["Total_Stock_Value"] = df_final["Total_Stock"] * sale_price_after_discount
     
     # All-time per-day metrics using numpy for vectorized operations
     df_final["Alltime_Perday_Quantity"] = np.where(
@@ -59,30 +51,42 @@ def process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, p
     ).round(2)
     df_final["Alltime_Perday_Quantity"] = df_final["Alltime_Perday_Quantity"].fillna(0)
     
-    # Calculate sale price after discount
-    sale_price_after_discount = (df_final["Sale_Price"] * (100 - df_final["Sale_Discount"]) / 100)
-    
-    # Calculate stock values (vectorized)
-    df_final["Alltime_Total_Quantity_Value"] = df_final["Alltime_Total_Quantity"] * sale_price_after_discount
-    df_final["Current_Stock_Value"] = df_final["Current_Stock"] * sale_price_after_discount
-    df_final["Total_Stock_Value"] = df_final["Total_Stock"] * sale_price_after_discount
-    df_final['Sale_Price_After_Discount'] = sale_price_after_discount
-    
-    # Rename for clarity
-    df_final = df_final.rename(columns={"Quantity": "Quantity_Sold", "Total_Value": "Sold_Quantity_Value"})
-    
-    # Calculate remaining metrics using vectorized operations
     df_final["Alltime_Perday_View"] = (df_final["Alltime_Items_Viewed"] / np.maximum(df_final["days_since_launch"], 1)).round(2).fillna(0)
     df_final["Alltime_Perday_ATC"] = (df_final["Alltime_Items_Addedtocart"] / np.maximum(df_final["days_since_launch"], 1)).round(2).fillna(0)
     df_final["Total_Stock_Sold_Percentage"] = (df_final["Alltime_Total_Quantity"] / df_final["Total_Stock"] * 100).round(2).fillna(0)
     
-    # Avoid division by zero for projected days calculation
+    # Calculate Projected_Days_to_Sellout based on all-time data
     with np.errstate(divide='ignore', invalid='ignore'):
         df_final["Projected_Days_to_Sellout"] = np.where(
             df_final["Alltime_Perday_Quantity"] > 0,
             df_final["Current_Stock"] / df_final["Alltime_Perday_Quantity"],
             np.inf
         )
+    
+    return df_final
+
+
+def calculate_period_metrics(df_final, days, period_name):
+   
+    # Calculate effective days for period calculation based on days since launch
+    if period_name == "first_period":
+        effective_days = np.where(df_final["days_since_launch"] > days, days, df_final["days_since_launch"])
+    else:
+        effective_days = np.where(df_final["days_since_launch"] > 2*days, days, df_final["days_since_launch"] - days)
+
+    # Ensure effective_days is not zero to avoid division by zero
+    effective_days = np.maximum(effective_days, 1)
+
+    # Calculate period-specific metrics using vectorized operations
+    df_final["Period_Perday_Quantity"] = df_final["Quantity"] / effective_days
+    df_final["Period_Perday_View"] = df_final["Items_Viewed"] / effective_days
+    df_final["Period_Perday_ATC"] = df_final["Items_Addedtocart"] / effective_days
+    
+    # Calculate stock sold percentage for this period
+    df_final["Stock_Sold_Percentage"] = ((df_final["Quantity"] / df_final["Total_Stock"]) * 100).round(2).fillna(0)
+    
+    # Rename for clarity
+    df_final = df_final.rename(columns={"Quantity": "Quantity_Sold", "Total_Value": "Sold_Quantity_Value"})
     
     # Period-specific prediction
     column_name = f"Predicted_Quantity_Next_{days}Days_Based_on_{period_name}"
@@ -92,26 +96,7 @@ def process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, p
         0
     )
     
-    # Handle selected columns instead of variations
-    if group_by.lower() == "item_id" and dt is not None and not dt.empty:
-        if variation_columns:
-            print("Hi")
-            # Use selected columns instead of variations
-            df_selected = create_selected_columns_dataframe(dt, colu, variation_columns)
-            df_final = pd.merge(df_final, df_selected, how="left", on="Item_Id")
-        else:
-            # Just merge basic info without additional columns
-            basic_cols = ['Item_Id', 'Item_Name', 'Item_Type', colu]
-            df_basic = dt[basic_cols].drop_duplicates()
-            df_final = pd.merge(df_final, df_basic, how="left", on="Item_Id", suffixes=('', '_dt'))
-    elif group_by.lower() == "item_name" and variation_columns:
-        # For item_name grouping, add the selected columns as aggregated values
-        print(f"Item_name grouping with selected columns: {variation_columns}")
-    else:
-        print("No additional columns added")
     
-    # Add period identifier
-    df_final["Period"] = period_name
     
     # Select columns with period-specific prefix for later renaming
     period_specific_columns = {
@@ -132,7 +117,42 @@ def process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, p
     return df_final
 
 
-# Updated function to add selected columns with comma-separated values
+def process_period_data(t1, t2, t3, t4, t5, temp_t2, t3_total, dt, colu, days, period_df, 
+                       period_name, group_by, grp, variation_columns=None):
+    
+    # Determine join columns
+    join_cols = 'Item_Id' if group_by.lower() == "item_id" else grp
+    
+    # Start with period dataframe
+    df_final = period_df.copy()
+    
+    # Calculate all-time metrics
+    df_final = calculate_alltime_metrics(df_final, temp_t2, t3_total, t5, t1, join_cols, group_by, grp)
+    
+    # Calculate period-specific metrics
+    df_final = calculate_period_metrics(df_final, days, period_name)
+    
+    # Handle selected columns instead of variations
+    if group_by.lower() == "item_id" and dt is not None and not dt.empty:
+        if variation_columns:
+            print("Adding selected columns for item_id grouping")
+            # Use selected columns instead of variations
+            df_selected = create_selected_columns_dataframe(dt, colu, variation_columns)
+            df_final = pd.merge(df_final, df_selected, how="left", on="Item_Id")
+        else:
+            # Just merge basic info without additional columns
+            basic_cols = ['Item_Id', 'Item_Name', 'Item_Type', colu]
+            df_basic = dt[basic_cols].drop_duplicates()
+            df_final = pd.merge(df_final, df_basic, how="left", on="Item_Id", suffixes=('', '_dt'))
+    elif group_by.lower() == "item_name" and variation_columns:
+        # For item_name grouping, add the selected columns as aggregated values
+        print(f"Item_name grouping with selected columns: {variation_columns}")
+    else:
+        print("No additional columns added")
+    
+    return df_final
+
+
 def create_selected_columns_dataframe(df, colu, selected_columns=None):
     """
     Create dataframe with selected columns, comma-separating multiple values within groups
@@ -195,5 +215,3 @@ def create_selected_columns_dataframe(df, colu, selected_columns=None):
         print(f"Selected columns dataframe created for {len(result_df)} items with columns: {valid_selected_columns}")
     
     return result_df
-
-

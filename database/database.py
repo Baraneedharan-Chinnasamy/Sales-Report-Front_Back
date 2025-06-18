@@ -25,9 +25,9 @@ DATABASES = {
 # Maintain separate session makers for each DB
 engines = {
     name: create_engine(url,
-        pool_size=50,             
-        max_overflow=5,           
-        pool_timeout=30,          
+        pool_size=30,             
+        max_overflow=15,           
+        pool_timeout=60,          
         pool_recycle=3600,        
         echo=False                
     )

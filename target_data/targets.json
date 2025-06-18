@@ -68,5 +68,19 @@
                 "timestamp": "2025-06-01"
             }
         ]
+    },
+    {
+        "Business_Name": "ADBXOUERJVK038L",
+        "Start_Date": "2025-06-06",
+        "Target_Column": "Category",
+        "Target_Key": "Tshirt And Pant",
+        "Target_Value": 5000,
+        "Uploaded_At": "2025-06-16 16:22:35",
+        "Status_History": [
+            {
+                "status": true,
+                "timestamp": "2025-06-06"
+            }
+        ]
     }
 ]

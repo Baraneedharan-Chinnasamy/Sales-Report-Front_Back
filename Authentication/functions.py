@@ -1,4 +1,8 @@
 from datetime import datetime, timedelta
+from email.mime.text import MIMEText
+import os
+import smtplib
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request
 from passlib.context import CryptContext
 from jose import jwt, JWTError
@@ -57,3 +61,40 @@ def verify_access_token_cookie(request: Request):
     if not token:
         raise HTTPException(status_code=401, detail="Unauthorized")
     return token
+
+
+def decode_token(token: str):
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        return None
+
+load_dotenv(dotenv_path=".env", override=True)
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
+
+def send_email(to_email: str, subject: str, body: str) -> bool:
+    """
+    Sends an email using Gmail SMTP. Returns True if successful, False otherwise.
+    """
+
+    if not EMAIL_USER or not EMAIL_PASS:
+        print("Email credentials not loaded. Check your .env file.")
+        return False
+    print(EMAIL_USER)
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_USER
+    msg["To"] = to_email
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(EMAIL_USER, EMAIL_PASS)
+            server.sendmail(EMAIL_USER, to_email, msg.as_string())
+            print(f"Email sent to {to_email}")
+            return True
+    except Exception as e:
+        print(f"Failed to send email to {to_email}: {e}")
+        return False
