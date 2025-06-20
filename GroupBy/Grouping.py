@@ -1,4 +1,3 @@
-import pandas as pd
 group_by_dic_prathisham = {
     "Item_Id": "min",
     "Item_Name": "nunique",
@@ -24,7 +23,7 @@ group_by_dic_prathisham = {
     "bottom_type": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "collections": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "details": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "launch_date": min,
+    "launch_date": "min",
     "pocket": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "top_length": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "waistband": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
@@ -34,12 +33,10 @@ group_by_dic_prathisham = {
     "Total_Value": "sum",
     "Total_Item_Viewed": "sum",
     "Total_Item_Atc": "sum",
-    "Per_Day_Value": "mean",
-    "Per_Day_Quantity": "mean",
-    "Per_Day_View": "mean",
-    "Per_Day_atc": "mean",
-    "Conversion_Percentage": "mean"
+    # Derived metrics - do not include aggregation functions
+    # These will be calculated after grouping
 }
+
 group_by_bee = {
     "Item_Id": "min",
     "Item_Name": "nunique",
@@ -72,7 +69,7 @@ group_by_bee = {
     "brand_name": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "discounts": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "inventory_type": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "launch_date":min,
+    "launch_date": "min",
     "offer_date": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "quadrant": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "relist_date": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
@@ -91,12 +88,10 @@ group_by_bee = {
     "Total_Value": "sum",
     "Total_Item_Viewed": "sum",
     "Total_Item_Atc": "sum",
-    "Per_Day_Value": "mean",
-    "Per_Day_Quantity": "mean",
-    "Per_Day_View": "mean",
-    "Per_Day_atc": "mean",
-    "Conversion_Percentage": "mean"
+    # Derived metrics - do not include aggregation functions
+    # These will be calculated after grouping
 }
+
 group_by_dic_zing = {
     "Item_Id": "min",
     "Item_Name": "nunique",
@@ -120,7 +115,7 @@ group_by_dic_zing = {
     "office_wear_collection": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "print_type": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "quadrant": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "launch_date":min,
+    "launch_date": "min",
     "style_type": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "feeding_friendly": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "Days_Since_Launch": "mean",
@@ -128,11 +123,8 @@ group_by_dic_zing = {
     "Total_Value": "sum",
     "Total_Item_Viewed": "sum",
     "Total_Item_Atc": "sum",
-    "Per_Day_Value": "mean",
-    "Per_Day_Quantity": "mean",
-    "Per_Day_View": "mean",
-    "Per_Day_atc": "mean",
-    "Conversion_Percentage": "mean"
+    # Derived metrics - do not include aggregation functions
+    # These will be calculated after grouping
 }
 
 group_by_dic_adb = {
@@ -150,32 +142,38 @@ group_by_dic_adb = {
     "Colour": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "Fabric": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "Gender": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Neck_Closure" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Neck_Type" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Neck_Closure": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Neck_Type": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "Occassion": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
     "Pack_Size": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Print_Collections" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Print_Pattern" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Print_Size" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Printed_Pattern" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Sleeve" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Top" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "Weave_Type" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "age_category" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "batch" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "bottom_fabric" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "launch_date" : min,
-    "print_size" : lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
-    "product_category" : "nunique",
-    "product_type" : "nunique",
+    "Print_Collections": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Print_Pattern": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Print_Size": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Printed_Pattern": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Sleeve": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Top": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "Weave_Type": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "age_category": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "batch": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "bottom_fabric": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "launch_date": "min",
+    "print_size": lambda x: ', '.join(sorted(set(str(item) for item in x if item is not None))),
+    "product_category": "nunique",
+    "product_type": "nunique",
     "Days_Since_Launch": "mean",
     "Total_Quantity": "sum",
     "Total_Value": "sum",
     "Total_Item_Viewed": "sum",
     "Total_Item_Atc": "sum",
-    "Per_Day_Value": "mean",
-    "Per_Day_Quantity": "mean",
-    "Per_Day_View": "mean",
-    "Per_Day_atc": "mean",
-    "Conversion_Percentage": "mean"
+   
+}
+
+# List of derived metrics that should not be in the groupby dictionaries
+# These are calculated after grouping in the main function
+DERIVED_METRICS = {
+    "Per_Day_Value",
+    "Per_Day_Quantity", 
+    "Per_Day_View",
+    "Per_Day_atc",
+    "Conversion_Percentage"
 }

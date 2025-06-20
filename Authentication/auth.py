@@ -50,85 +50,23 @@ def logout(response: Response):
     )
     return {"message": "Logged out"}
 
-
 @router.get("/users")
 def read_current_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # ✅ Fetch all users
-    all_users = db.query(User).all()
-    people = [
-        {
-            "employee_id": user.employee_id,
-            "username": user.username
-        }
-        for user in all_users
-    ]
-
-    # ✅ Fetch all active dropdown options
-    active_options = db.query(DropdownOption.type, DropdownOption.value).filter(
-        DropdownOption.is_active == True
-    ).all()
-
-    dropdown_map_full = {}
-    for type_, value in active_options:
-        type_lower = type_.lower()
-        dropdown_map_full.setdefault(type_lower, []).append(value)
-
-    # ✅ Filter dropdowns based on current user's permissions
-    filtered_dropdown_map = {}
-
-    user_permissions = current_user.permissions or {}
-    allowed_brands = user_permissions.get("brands", {})
-
-    # ✅ Filter brands
-    filtered_dropdown_map["brand_name"] = [
-        brand for brand in dropdown_map_full.get("brand_name", [])
-        if brand in allowed_brands
-    ] if allowed_brands else []
-
-    # ✅ Filter roles and format_types
-    allowed_roles = set()
-    allowed_formats = set()
-
-    for brand_perms in allowed_brands.values():
-        for format_type, roles in brand_perms.items():
-            allowed_formats.add(format_type)
-            allowed_roles.update(roles)
-
-    # ✅ Filter roles
-    filtered_dropdown_map["role"] = [
-        role for role in dropdown_map_full.get("role", [])
-        if role in allowed_roles
-    ]
-
-    # ✅ Filter format_type
-    filtered_dropdown_map["format_type"] = [
-        fmt for fmt in dropdown_map_full.get("format_type", [])
-        if fmt in allowed_formats
-    ]
-
-    # ✅ Copy other dropdowns without filtering
-    for key in dropdown_map_full:
-        if key not in {"brand_name", "role", "format_type"}:
-            filtered_dropdown_map[key] = dropdown_map_full[key]
-
-    
+    # Filter the permissions dictionary to include only 'admin' and 'reportrix'
+    filtered_permissions = {key: current_user.permissions[key] for key in ["admin", "reportrix"] if key in current_user.permissions}
 
     return {
         "employee_id": current_user.employee_id,
         "username": current_user.username,
         "email": current_user.email,
-        "designation": current_user.designation,
-        "permissions": current_user.permissions,
-        "people": people,
-        "dropdowns": filtered_dropdown_map
+        "permissions": filtered_permissions
     }
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
-
 
 @router.post("/forgot-password")
 def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):

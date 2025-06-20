@@ -33,7 +33,7 @@ class Item(Base):
     Top = Column(String(255), nullable=True)
     Weave_Type = Column(String(255), nullable=True)
     age_category = Column(String(255), nullable=True, name = "__Age_Category")
-    Batch = Column(String(255), nullable=True, name = "__Batch")
+    batch = Column(String(255), nullable=True, name = "__Batch")
     bottom_fabric = Column(String(255), nullable=True, name = "__Bottom_Fabric")
     launch_date = Column(Date, nullable=True, name = "__Launch_Date")
     neck_closure = Column(String(255), nullable=True, name = "__Neck_Closure")

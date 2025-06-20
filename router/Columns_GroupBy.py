@@ -32,7 +32,7 @@ async def get_table(business: str, db: Session = Depends(get_db),token=Depends(v
         print("Data fetched successfully!")
 
         column_list = column_name_df["Column"].dropna().astype(str).tolist()
-
+        
         return {"columns": column_list}
 
     except Exception as e:

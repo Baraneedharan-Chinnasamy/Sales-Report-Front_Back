@@ -9,6 +9,7 @@ from router.Columns_GroupBy import router as columns_router
 from router.GroupBy_Summary import router as groupby_router
 from Authentication.auth import router as Authentication
 from router.Launch_Summary import router as inventory_summary_router
+from router.Pre_load_items import router as pre_load_items_router
 
 
 from utilities.generic_utils import get_models
@@ -35,6 +36,7 @@ app.include_router(columns_router, prefix="/api")
 app.include_router(groupby_router, prefix="/api")
 app.include_router(Authentication, prefix="/api")
 app.include_router(inventory_summary_router, prefix="/api")
+app.include_router(pre_load_items_router, prefix="/api")
 
 
 # === Auto-create tables ===
